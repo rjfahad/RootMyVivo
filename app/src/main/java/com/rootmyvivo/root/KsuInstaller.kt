@@ -41,7 +41,11 @@ class KsuInstaller(
             val prefs = com.rootmyvivo.data.Prefs(ctx)
             // Пакет для перезапуска менеджера из late-load: у spoofed-сборок
             // он рандомный — берём фактический из прошлой установки
-            val restartPkg = prefs.managerPackage.ifEmpty { variant.packageName }
+            // Пакет прошлой установки — только если это менеджер ЭТОГО же
+            // варианта: чужой (прошлый выбор на главной) ушёл бы в late-load
+            // restart и провалил проверку «уже установлен»
+            val savedPkg = if (prefs.managerVariant == variant.id) prefs.managerPackage else ""
+            val restartPkg = savedPkg.ifEmpty { variant.packageName }
 
             // ── 1. Аудит: что уже есть на устройстве, до любых скачиваний ──
             val (_, preMods) = LocalRunner.exec("grep -i kernelsu /proc/modules 2>/dev/null")
@@ -52,7 +56,7 @@ class KsuInstaller(
             } else if (moduleLoaded) {
                 log(R.string.log_ksu_already_loaded, LogLevel.WARN)
             }
-            val pkgs = listOf(variant.packageName, prefs.managerPackage)
+            val pkgs = listOf(variant.packageName, savedPkg).filter { it.isNotEmpty() }.distinct()
             // ksud берём из установленного менеджера: это РОВНО та версия,
             // что у менеджера — скачанный из релизов/CI может не совпасть
             // (разные CLI, другие subcommand'ы). Менеджерный libksud лежит в
@@ -327,6 +331,15 @@ class KsuInstaller(
                 val dpCtx = ctx.createDeviceProtectedStorageContext()
                 val dpDir = dpCtx.filesDir.parentFile ?: return@withContext null
                 val apk = File(dpDir, "manager.apk")
+                // Кэш — только варианта ЭТОГО запуска: прошлый выбор менеджера
+                // на главной дал бы чужой APK (чужой пакет в df.conf, чужой ksud)
+                val sidecar = File(dpDir, "manager.apk.variant")
+                if ((sidecar.exists() && sidecar.readText().trim() != variant.id) ||
+                    (sidecar.exists().not() && apk.exists())
+                ) {
+                    apk.delete()
+                    sidecar.delete()
+                }
                 // Уже скачан и валиден — не качаем повторно
                 if (apk.exists() && apk.length() > 1_000_000) return@withContext apk
                 apk.delete()
@@ -337,7 +350,10 @@ class KsuInstaller(
                     } catch (_: Exception) { null } ?: run {
                         apk.delete(); null
                     }
-                    if (pkg != null && apk.length() > 1_000_000) return@withContext apk
+                    if (pkg != null && apk.length() > 1_000_000) {
+                        sidecar.writeText(variant.id)
+                        return@withContext apk
+                    }
                     apk.delete()
                 }
                 null
@@ -350,7 +366,7 @@ class KsuInstaller(
     suspend fun installManagerOnly(variant: KsuVariant): KsuResult =
         withContext(Dispatchers.IO) {
             val prefs = com.rootmyvivo.data.Prefs(ctx)
-            val knownPkgs = listOf(variant.packageName, prefs.managerPackage)
+            val knownPkgs = listOf(variant.packageName, if (prefs.managerVariant == variant.id) prefs.managerPackage else "")
                 .filter { it.isNotEmpty() }.distinct()
 
             suspend fun suWorks(): Boolean {
@@ -418,7 +434,7 @@ class KsuInstaller(
                     // Бутстрап мог уже поставить его (root-контекст) —
                     // тогда диалог не нужен вовсе
                     if (isPackageInstalled(actualPkg)) {
-                        prefs.managerPackage = actualPkg
+                        prefs.managerPackage = actualPkg; prefs.managerVariant = variant.id
                         complete(true, R.string.log_manager_install_ok)
                         apkFile.delete()
                     } else {
@@ -429,7 +445,7 @@ class KsuInstaller(
                     // из фона на vivo порой не открывался вовсе
                     val viaSession = installApkViaSession(apkFile, actualPkg)
                     if (viaSession && isPackageInstalled(actualPkg)) {
-                        prefs.managerPackage = actualPkg
+                        prefs.managerPackage = actualPkg; prefs.managerVariant = variant.id
                         complete(true, R.string.log_manager_install_ok)
                         apkFile.delete()
                     } else {
@@ -459,7 +475,7 @@ class KsuInstaller(
                             kotlinx.coroutines.delay(2000L)
                         }
                         if (isPackageInstalled(actualPkg)) {
-                            prefs.managerPackage = actualPkg
+                            prefs.managerPackage = actualPkg; prefs.managerVariant = variant.id
                             complete(true, R.string.log_manager_install_ok)
                             apkFile.delete()
                         } else {
@@ -497,7 +513,7 @@ class KsuInstaller(
             val prefs = com.rootmyvivo.data.Prefs(ctx)
             // Уже установлен — не качаем и не ставим повторно. Проверяем и
             // канонический пакет варианта, и фактический прошлой установки
-            val knownPkgs = listOf(variant.packageName, prefs.managerPackage)
+            val knownPkgs = listOf(variant.packageName, if (prefs.managerVariant == variant.id) prefs.managerPackage else "")
                 .filter { it.isNotEmpty() }.distinct()
             for (pkg in knownPkgs) {
                 if (isPackageInstalled(pkg)) {
@@ -527,7 +543,7 @@ class KsuInstaller(
                 } ?: continue
                 if (isPackageInstalled(actualPkg)) {
                     // уже стоит (например, ставили вручную) — просто запоминаем
-                    prefs.managerPackage = actualPkg
+                    prefs.managerPackage = actualPkg; prefs.managerVariant = variant.id
                     log(R.string.log_manager_already, LogLevel.OK, variant.displayName)
                     apk.delete()
                     return
@@ -536,7 +552,7 @@ class KsuInstaller(
                 onEvent(FlowEvent.Complete(true))
                 progress(R.string.log_manager_install)
                 if (installApkViaRoot(apk) && isPackageInstalled(actualPkg)) {
-                    prefs.managerPackage = actualPkg
+                    prefs.managerPackage = actualPkg; prefs.managerVariant = variant.id
                     complete(true, R.string.log_manager_install_ok)
                     apk.delete()
                     return

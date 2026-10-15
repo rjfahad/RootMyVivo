@@ -21,8 +21,16 @@ import java.net.InetAddress
  * HMAC-вариант давал промах по ICV и page cache не менялся), стейджинг
  * ksud/bootstrap/df.conf в device-protected папку (путь зашит в
  * lkm/dfroot.c), запуск натива.
+ *
+ * Выбор менеджера — как в оригинальном DFRoot (SettingsFragment → su_manager),
+ * только источник — вариант, выбранный пользователем на главной ([variant]),
+ * а не первый установленный из захардкоженного списка. ksud берётся ЭТОГО
+ * менеджера: установленный пакет → распаковка libksud.so из стейдженного
+ * manager.apk → assets/ksud (фолбэк, оригинальный KernelSU). df.conf
+ * `su_manager` = фактический пакет APK (spoofed-сборки подписи под рандомным
+ * именем) — бутстрап авторизует именно его при ksud late-load.
  */
-class DirtyFragRunner {
+class DirtyFragRunner(private val variant: KsuVariant) {
 
     /** Живой процесс натива — для полной остановки по кнопке. */
     @Volatile private var proc: Process? = null
@@ -37,34 +45,17 @@ class DirtyFragRunner {
     }
 
     private companion object {
-        val SU_MANAGERS = listOf(
-            "me.weishu.kernelsu",
-            "me.bmax.apatch",
-            "com.rifsxd.ksunext",
-        )
         const val NATIVE_BIN = "libdfroot.so"
     }
 
-    /** Найденный SU-менеджер (его пакет пишется в df.conf для ksud late-load). */
-    var suManager: String = "me.weishu.kernelsu"
+    /** Пакет менеджера, под который стейджнуты ksud/df.conf. */
+    var suManager: String = variant.packageName
         private set
 
     /** device-protected контекст: ko/бутстрап читают наши файлы до разблокировки. */
     private fun dpCtx(ctx: Context): Context = ctx.createDeviceProtectedStorageContext()
 
     private fun dpDir(ctx: Context): File = dpCtx(ctx).filesDir.parentFile!!
-
-    /** Выбор SU-менеджера: установленный среди известных, иначе дефолт (KernelSU). */
-    private fun detectManager(ctx: Context): String {
-        for (pkg in SU_MANAGERS) {
-            try {
-                ctx.createPackageContext(pkg, 0)
-                return pkg
-            } catch (_: Exception) {
-            }
-        }
-        return "me.weishu.kernelsu"
-    }
 
     private fun stageBin(ctx: Context, src: File, name: String) {
         if (!src.exists()) throw java.io.IOException("$src not found")
@@ -75,28 +66,52 @@ class DirtyFragRunner {
     }
 
     /**
-     * Стейджинг: ksud (из менеджера, если установлен — libksud.so; иначе наш
-     * assets/ksud), bootstrap и df.conf — в /data/user_de/0/<pkg>/.
-     * Вызывать и до разблокировки (BootReceiver) — directBootAware.
+     * Стейджинг: ksud (из выбранного менеджера), bootstrap и df.conf —
+     * в /data/user_de/0/<pkg>/. Вызывать и до разблокировки (BootReceiver)
+     * — directBootAware. Идемпотентен: run() перестейдживает после
+     * stageManagerApkForDf — так df.conf читает уже скачанный APK.
      */
     fun stage(ctx: Context) {
-        val pkg = detectManager(ctx)
-        suManager = pkg
         val dp = dpDir(ctx)
         dp.mkdirs()
 
-        var ksudStaged = false
-        try {
-            val app = ctx.packageManager.getApplicationInfo(pkg, 0)
-            val libksud = File(app.nativeLibraryDir, "libksud.so")
-            if (libksud.exists()) {
-                stageBin(ctx, libksud, "ksud")
-                ksudStaged = true
-            }
-        } catch (_: Exception) {
+        // APK менеджера, докачанный до запуска эксплойта. Фактический пакет
+        // читаем из архива: spoofed-сборка подписана под рандомным именем.
+        // Сайдкар manager.apk.variant не даёт переиспользовать APK другого
+        // варианта, оставшийся от прошлого выбора на главной
+        val apk = File(dp, "manager.apk")
+        val sidecar = File(dp, "manager.apk.variant")
+        if (apk.exists() && (sidecar.exists() && sidecar.readText().trim() != variant.id)) {
+            apk.delete()
+            sidecar.delete()
         }
+        val actualPkg = if (apk.exists() && apk.length() > 1_000_000) {
+            try {
+                ctx.packageManager.getPackageArchiveInfo(apk.absolutePath, 0)?.packageName
+            } catch (_: Exception) {
+                null
+            }
+        } else null
+        val pkg = actualPkg ?: variant.packageName
+        suManager = pkg
+
+        // ksud приоритетом: 1) установленный пакет выбранного менеджера —
+        // распаковка libksud.so из его base.apk (нативы лежат DEFLATE'ом,
+        // в /data/app не извлекаются), 2) тот же распайп из стейдженного
+        // manager.apk, 3) assets/ksud — фолбэк для пустой установки
+        var ksudStaged = false
+        for (p in listOf(pkg, variant.packageName).distinct()) {
+            try {
+                val src = ctx.packageManager.getApplicationInfo(p, 0).sourceDir
+                if (src != null && stageKsudFromApk(File(src), File(dp, "ksud"))) {
+                    ksudStaged = true
+                    break
+                }
+            } catch (_: Exception) {
+            }
+        }
+        if (!ksudStaged && apk.exists()) ksudStaged = stageKsudFromApk(apk, File(dp, "ksud"))
         if (!ksudStaged) {
-            // Универсальный путь: наш ksud из assets (KernelSU userspace daemon)
             val tmp = File(dpCtx(ctx).filesDir, "ksud_asset")
             Files.copy(
                 dpCtx(ctx).assets.open("ksud").use { it.readBytes() }.inputStream(),
@@ -111,7 +126,9 @@ class DirtyFragRunner {
         stageBin(ctx, File(nativeDir, "libbootstrap.so"), "bootstrap")
 
         // df.conf для бутстрапа (key=value; disable_modules по умолчанию выключен —
-        // модули пользователя не трогаем)
+        // модули пользователя не трогаем). su_manager — пакет ИМЕННО того
+        // менеджера, чей ksud стейджнут, — late-load авторизует его, а не
+        // захардкоженный me.weishu.kernelsu
         val conf = buildString {
             append("su_manager=").append(pkg).append('\n')
             append("soft_reboot=0\n")
@@ -120,9 +137,31 @@ class DirtyFragRunner {
         File(dp, "df.conf").writeText(conf)
     }
 
+    /** libksud.so из base.apk менеджера → dest; true если извлечён. */
+    private fun stageKsudFromApk(apk: File, dest: File): Boolean {
+        if (!apk.isFile || apk.length() < 1_000_000) return false
+        return try {
+            var ok = false
+            java.util.zip.ZipInputStream(apk.inputStream()).use { zis ->
+                var e = zis.nextEntry
+                while (e != null) {
+                    if (e.name == "lib/arm64-v8a/libksud.so" || e.name == "lib/arm64/libksud.so") {
+                        dest.outputStream().use { out -> zis.copyTo(out) }
+                        ok = dest.length() > 0 && dest.setExecutable(true, false)
+                        break
+                    }
+                    e = zis.nextEntry
+                }
+            }
+            ok
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     /**
      * Полный запуск: SA (IpSecManager) → стейджинг → нативный бинарь.
-     * Возвращает строки лога. Кидает исключение при любой ошибкеSetup.
+     * Возвращает код выхода. Кидает исключение при любой ошибке setup.
      */
     fun run(ctx: Context, onLine: (String) -> Unit): Int {
         stage(ctx)

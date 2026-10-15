@@ -41,7 +41,10 @@ object LocalRunner {
         // вывод идёт в лог напрямую, без reader-потока.
         val redir = if (logFile != null) " > '${logFile.absolutePath}' 2>&1" else ""
         val pidFile = logFile?.let { File(it.parentFile, "bg.pid") }
-        val pidPart = if (pidFile != null) "; echo \\$! > '${pidFile.absolutePath}'" else ""
+        // После `&` начинается новый список — разделитель только пробел:
+        // `cmd > log &; echo …` — синтаксическая ошибка sh (пейлоад не
+        // запускался вовсе). `\$!` в Kotlin даёт sh-литерал `$!` — PID.
+        val pidPart = if (pidFile != null) " echo \$! > '${pidFile.absolutePath}'" else ""
         val full = "($command$redir &$pidPart)"
         val pb = ProcessBuilder("sh", "-c", full)
         pb.environment().putAll(env)

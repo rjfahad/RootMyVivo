@@ -153,6 +153,17 @@ class Prefs(context: Context) {
             sp.edit().putString(KEY_MANAGER_PKG, value).apply()
         }
 
+    /**
+     * Какому варианта менеджер записан в [managerPackage] (id KsuVariant).
+     * Без этого пакет прошлой установки считался бы «уже стоит» при любом
+     * выборе на главной — и ставился бы старый чужой менеджер.
+     */
+    var managerVariant: String
+        get() = sp.getString(KEY_MANAGER_VARIANT, "") ?: ""
+        set(value) {
+            sp.edit().putString(KEY_MANAGER_VARIANT, value).apply()
+        }
+
 
     /** Модуль какого варианта загружен в ядре сейчас (id KsuVariant). */
     var loadedModuleVariant: String
@@ -190,6 +201,7 @@ class Prefs(context: Context) {
         const val KEY_ROOT_BOOT_ID = "rootBootId"
         const val KEY_KSU = "selectedKsu"
             const val KEY_MANAGER_PKG = "managerPackage"
+            const val KEY_MANAGER_VARIANT = "managerVariant"
             const val KEY_LOADED_VARIANT = "loadedModuleVariant"
         const val KEY_DEV_UNLOCKED = "devUnlocked"
         const val KEY_TG_PROMO = "tgPromoDismissed"
