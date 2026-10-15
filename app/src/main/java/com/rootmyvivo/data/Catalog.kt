@@ -40,22 +40,31 @@ data class KernelBuild(
     val env: Map<String, String>,
     val note: String,
     val rawRoute: String? = null,
+    /** Wildcard-резерв («6.1.x-dirty»): подстрока вместо точной сборки,
+     *  всегда проигрывает точному билду при выборе пейлоада. */
+    val wildcard: Boolean = false,
+    /** Явная метка чипа из каталога (иначе — kernelTag первого паттерна). */
+    val labelOverride: String? = null,
 ) {
     val ready: Boolean get() = (status == "ready" || status == "experimental") && file != null
     /** Честная готовность — на устройстве не проверялся. */
     val experimental: Boolean get() = status == "experimental"
-    val label: String get() = match.firstOrNull()?.let { kernelTag(it) } ?: id
+    val label: String get() = labelOverride ?: match.firstOrNull()?.let { kernelTag(it) } ?: id
 
     /** Маршрут эксплойта из каталога (tcp / pselect / mcast), null если нет. */
     val route: String? get() = rawRoute?.uppercase()
 
-    /** 2 — совпал GKI-паттерн (строже), 1 — короткая версия, 0 — мимо. */
+    /** 3 — точная GKI-строка, 2 — короткая версия, 1 — wildcard, 0 — мимо. */
     fun specificity(actualFull: String): Int {
         var best = 0
         for (m in match) {
             val hit = if (m.endsWith(".*")) actualFull.startsWith(m.removeSuffix("*")) else actualFull.contains(m)
             if (!hit) continue
-            val score = if (shortVersion(m).isNotEmpty()) 1 else 2
+            val score = when {
+                wildcard -> 1
+                shortVersion(m).isNotEmpty() -> 2
+                else -> 3
+            }
             if (score > best) best = score
         }
         return best
@@ -119,7 +128,10 @@ fun shortVersion(s: String): String =
 fun kernelTag(s: String): String {
     val ver = shortVersion(s)
     val hex = Regex("""-g([0-9a-f]{5,})""").find(s)?.groupValues?.get(1)
-    return if (ver.isNotEmpty() && hex != null) "$ver-g${hex.take(4)}" else ver.ifEmpty { s }
+    if (ver.isNotEmpty() && hex != null) return "$ver-g${hex.take(4)}"
+    // Dirty-суффикс вместо git-id («…-android14-11-maybe-dirty»): метим метку
+    if (ver.isNotEmpty() && (s.contains("-maybe-dirty") || s.endsWith("-dirty"))) return "$ver-dirty"
+    return ver.ifEmpty { s }
 }
 
 /**
@@ -325,6 +337,8 @@ class Catalog(var url: String = DEFAULT_URL) {
                     env = env,
                     note = o.optString("matchCondition", ""),
                     rawRoute = o.optString("route", "").takeIf { it.isNotEmpty() },
+                    wildcard = o.optBoolean("wildcard", false),
+                    labelOverride = o.optString("label", "").takeIf { it.isNotEmpty() },
                 )
             }
         }

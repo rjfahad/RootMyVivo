@@ -300,11 +300,14 @@ private fun UserDeviceCard(state: UiState) {
     // Метод по dfAllowed (учитывает тумблер «DF на всех ядрах»), не по голой совместимости
     val dfUsed = d.dfAllowed(state.settings.allowDfAllKernels)
     val nothingSupported = !dfUsed && !glAvailable
+    // vivo/iQOO? Иначе границы поддержки в скобках не показываем
+    val isVivo = d.brand.contains("vivo") || d.brand.contains("iqoo")
     // Имя девайса из каталога: «iQOO Neo 11 (V2520A)»
     val heroName = state.payload?.device?.marketName?.takeIf { it.isNotEmpty() }
         ?: myDev?.marketName?.takeIf { it.isNotEmpty() }
         ?: d.marketName
-    val heroTitle = "$heroName (${d.model})"
+    val heroCode = myDev?.code?.takeIf { it.isNotEmpty() } ?: d.model
+    val heroTitle = "$heroName ($heroCode)"
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -315,10 +318,10 @@ private fun UserDeviceCard(state: UiState) {
             Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // Заголовок — имя девайса из каталога + модель в скобках
+            // Заголовок — имя девайса из каталога + код тела в скобках
             Text(
                 heroTitle,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 1,
@@ -354,12 +357,13 @@ private fun UserDeviceCard(state: UiState) {
                 }
             } else {
                 // Как в бета1: «Используется метод …» — с границей для DF,
-                // GL — просто метод. Пейлоад-строкой ниже — каталогные чипы
+                // GL — просто метод. Не vivo/iQOO — вместо «активен до …»
+                // честно: поддержку по таблицам не определить
                 Text(
-                    if (dfUsed) {
-                        stringResource(R.string.payload_method_used_df, dfLimit)
-                    } else {
-                        stringResource(R.string.payload_method_used_gl)
+                    when {
+                        dfUsed && isVivo -> stringResource(R.string.payload_method_used_df, dfLimit)
+                        dfUsed -> stringResource(R.string.payload_method_used_df_unknown)
+                        else -> stringResource(R.string.payload_method_used_gl)
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,

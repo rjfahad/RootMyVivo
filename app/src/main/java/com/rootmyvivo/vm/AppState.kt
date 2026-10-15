@@ -77,6 +77,8 @@ data class UiState(
     val deviceInCatalog: Boolean = false,
     /** Маркет-нейм из каталога («vivo X200 Pro») для строки «Модель». */
     val catalogMarketName: String? = null,
+    /** Код тела из каталога («PD2405»/V-код) — вместо Build.DEVICE в скобках. */
+    val catalogDeviceCode: String? = null,
     /** Одноразовый тост (string resource id): UI показывает и гасит consumeToast */
     val toastRes: Int? = null,
     // кастомный пейлоад (выбран через файловый менеджер): деплоится именно

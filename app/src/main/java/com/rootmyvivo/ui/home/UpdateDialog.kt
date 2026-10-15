@@ -14,11 +14,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudDownload
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.rootmyvivo.R
 import com.rootmyvivo.data.AppUpdate
 import com.rootmyvivo.vm.UpdateDownloadState
@@ -44,71 +46,87 @@ fun UpdateDialog(
     onUpdate: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    AlertDialog(
+    Dialog(
         onDismissRequest = onCancel,
-        title = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    Icons.Rounded.CloudDownload, null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
-                )
-                Text(stringResource(R.string.update_title), fontWeight = FontWeight.Bold)
-            }
-        },
-        text = {
-            // плавное «сужение» при смене содержимого (чейнджлог → прогресс)
+        // usePlatformDefaultWidth — как у AlertDialog: та же ширина
+        properties = DialogProperties(usePlatformDefaultWidth = true),
+    ) {
+        // animateContentSize на ВСЕЙ поверхности диалога: окно центрируется
+        // и следует за каждым кадром анимации, поэтому размер меняется
+        // симметрично с обеих сторон. Внутри AlertDialog верх «подпрыгивал»
+        // (слоты пересчитывались мгновенно), а низ доезжал анимацией.
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(),
+        ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.animateContentSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(24.dp),
             ) {
-                Text(
-                    stringResource(R.string.update_version, update.versionName) +
-                        if (update.apkSize > 0) {
-                            "  ·  " + stringResource(
-                                R.string.update_size,
-                                "%.1f".format(update.apkSize / 1048576.0),
-                            )
-                        } else "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (download != null) {
-                    UpdateProgress(download)
-                } else if (update.body.isNotBlank()) {
-                    // список изменений из релиза: режем до разумного объёма
-                    val body = update.body.trim().take(600)
-                    Column(
-                        Modifier
-                            .height(160.dp)
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        Text(body, style = MaterialTheme.typography.bodySmall)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Rounded.CloudDownload, null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Text(
+                        stringResource(R.string.update_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(R.string.update_version, update.versionName) +
+                            if (update.apkSize > 0) {
+                                "  ·  " + stringResource(
+                                    R.string.update_size,
+                                    "%.1f".format(update.apkSize / 1048576.0),
+                                )
+                            } else "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (download != null) {
+                        UpdateProgress(download)
+                    } else if (update.body.isNotBlank()) {
+                        // список изменений из релиза: режем до разумного объёма
+                        val body = update.body.trim().take(600)
+                        Column(
+                            Modifier
+                                .height(160.dp)
+                                .verticalScroll(rememberScrollState()),
+                        ) {
+                            Text(body, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    TextButton(onClick = onCancel, enabled = download == null || download.done) {
+                        Text(stringResource(R.string.update_cancel))
+                    }
+                    Button(onClick = onUpdate, enabled = download == null || download.done) {
+                        Text(
+                            if (download != null && download.done) {
+                                stringResource(R.string.update_retry_install)
+                            } else {
+                                stringResource(R.string.update_button)
+                            },
+                        )
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(onClick = onUpdate, enabled = download == null || download.done) {
-                Text(
-                    if (download != null && download.done) {
-                        stringResource(R.string.update_retry_install)
-                    } else {
-                        stringResource(R.string.update_button)
-                    },
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel, enabled = download == null || download.done) {
-                Text(stringResource(R.string.update_cancel))
-            }
-        },
-        shape = MaterialTheme.shapes.extraLarge,
-    )
+        }
+    }
 }
 
 /** Прогресс скачивания: полоса + счётчик мегабайт. */

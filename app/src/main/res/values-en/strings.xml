@@ -204,6 +204,7 @@
     <string name="payload_gl_desc_long">Futex PI race exploit (CVE-2026-43499): payload for a specific kernel build from the catalog. Remains for 6.1.x kernels where the DirtyFrag primitive is absent. Device-bound — see the device list.</string>
     <string name="payload_available_section">Available exploits</string>
     <string name="payload_method_used_df">DirtyFrag method is used (active up to %1$s)</string>
+    <string name="payload_method_used_df_unknown">DirtyFrag method is used (not a vivo/iQOO device — support cannot be determined)</string>
     <string name="payload_method_used_gl">GhostLock method is used</string>
     <string name="supported_title">Supported devices</string>
     <string name="payload_screen_title">Exploit</string>

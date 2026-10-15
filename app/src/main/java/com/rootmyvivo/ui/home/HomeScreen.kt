@@ -890,7 +890,8 @@ private fun DeviceGroup(state: UiState) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
             }
         } else {
-            val modelValue = (state.catalogMarketName ?: d.marketName) + " (${d.model})"
+            val modelValue = (state.catalogMarketName ?: d.marketName) +
+                " (${state.catalogDeviceCode ?: d.model})"
             SettingsRow(
                 title = stringResource(R.string.device_model),
                 // Маркет-нейм из каталога + PD-код: «vivo X200 Pro (PD2405)».

@@ -134,43 +134,28 @@ fun FaqScreen(onClose: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Spacer(Modifier.height(4.dp))
-            var index = 0
             categories.forEach { cat ->
-                // Каскад появления — как в карточках поддерживаемых устройств
-                val myIndex = index++
-                var visible by remember { mutableStateOf(false) }
-                LaunchedEffect(Unit) {
-                    kotlinx.coroutines.delay((myIndex * 120L).coerceAtMost(480L))
-                    visible = true
-                }
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = expandVertically(
-                        animationSpec = tween(300, easing = FastOutSlowInEasing),
-                    ) + fadeIn(tween(300, easing = FastOutSlowInEasing)),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Spacer(Modifier.height(6.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(start = 12.dp),
-                        ) {
-                            Icon(
-                                cat.icon, null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                stringResource(cat.titleRes),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                        cat.items.forEach { item ->
-                            FaqCard(item)
-                        }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(start = 12.dp),
+                    ) {
+                        Icon(
+                            cat.icon, null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            stringResource(cat.titleRes),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    cat.items.forEach { item ->
+                        FaqCard(item)
                     }
                 }
             }

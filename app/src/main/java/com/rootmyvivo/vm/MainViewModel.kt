@@ -95,6 +95,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 catalogData = cat,
                 deviceInCatalog = catDev != null,
                 catalogMarketName = catDev?.marketName?.takeIf { it.isNotEmpty() },
+                catalogDeviceCode = catDev?.code?.takeIf { it.isNotEmpty() },
             )
         }
     }

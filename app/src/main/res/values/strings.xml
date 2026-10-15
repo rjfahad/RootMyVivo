@@ -217,6 +217,7 @@
     <string name="payload_gl_desc_long">Эксплойт гонки futex PI (CVE-2026-43499): пейлоад под конкретную сборку ядра из каталога. Остался для ядер 6.1.x, где примитив DirtyFrag отсутствует в принципе. Привязан к моделям — смотри список устройств.</string>
     <string name="payload_available_section">Доступные эксплоиты</string>
     <string name="payload_method_used_df">Используется метод DirtyFrag (активен до %1$s)</string>
+    <string name="payload_method_used_df_unknown">Используется метод DirtyFrag (устройство не vivo/iQOO — поддержку не определить)</string>
     <string name="payload_method_used_gl">Используется метод GhostLock</string>
     <string name="supported_title">Поддерживаемые устройства</string>
     <string name="payload_screen_title">Эксплоит</string>
