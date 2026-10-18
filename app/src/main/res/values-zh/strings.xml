@@ -80,7 +80,7 @@
     <string name="flow_fail_stopped">已被用户停止</string>
     <string name="flow_fail_ksu">KernelSU 未激活</string>
     <string name="flow_fail_other">未知错误</string>
-            <string name="log_df_root_iface">DirtyFrag root 接口已加载，正在安装 KernelSU 管理器</string>
+            <string name="log_df_root_iface">正在安装管理器…</string>
             <string name="log_df_wait_manager">等待管理器安装确认…</string>
                 <string name="log_df_manager_manual">管理器未安装 — 请确认安装对话框或手动安装</string>
     <string name="log_df_manager_stage_fail">管理器未预下载 — 将通过系统安装器安装</string>
@@ -99,6 +99,7 @@
     <string name="payload_short_searching">搜索中…</string>
 <string name="transport_via_adb">通过 ADB tcp</string>    <!-- 日志 -->
     <string name="log_started">开始获取 root</string>
+    <string name="log_started_df">开始获取 root（DirtyFrag 方法）</string>
     <string name="log_payload">使用载荷：%1$s</string>
     <string name="log_download_start">正在下载 %1$s（%2$d KB）…</string>
     <string name="log_download_ok">%1$s 已下载</string>
@@ -109,7 +110,6 @@
     <string name="df_status_patched">不适用：该内核的原语已被修补（2026 年 5 月起的修复）</string>
     <string name="df_status_dead">不适用：6.1.x 内核对 DirtyFrag 已失效（内核侧缓解）</string>
     <string name="df_status_nongki">不适用：不支持 non-GKI 内核</string>
-    <string name="log_df_method">DirtyFrag 方法（通用，内置于应用）</string>
     <string name="log_df_staged">ksud 与 bootstrap 已就绪</string>
     <string name="log_df_dead_61">DirtyFrag 不可用：内核 6.1.x — 原语已失效（内核侧缓解）</string>
     <string name="log_df_patched">DirtyFrag 不可用：该内核的原语已被修补（2026 年 5 月起的修复）</string>

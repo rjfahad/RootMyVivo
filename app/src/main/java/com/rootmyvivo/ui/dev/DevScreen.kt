@@ -358,6 +358,7 @@ private fun runDemo(
 
         apply(FlowEvent.Step(Phase.DEPLOY, 2, 4))
         kotlinx.coroutines.delay(500)
+        apply(FlowEvent.Log(ctx.getString(R.string.log_deploy_ok), LogLevel.OK))
 
         // ── Эксплойт: живой лог ──
         apply(FlowEvent.Step(Phase.EXPLOIT, 3, 4))
@@ -445,12 +446,15 @@ private fun runDemoDf(
             update(s)
         }
 
-        apply(FlowEvent.Log(ctx.getString(R.string.log_started)))
-        apply(FlowEvent.Log(ctx.getString(R.string.log_df_method), LogLevel.OK))
+        // ═══ Точная последовательность успешного runDirtyFrag() + finishRoot(dfMode) ═══
+        apply(FlowEvent.Log(ctx.getString(R.string.log_started_df)))
 
-        // ── 1. Подготовка: SA + стейджинг ──
+        // ── 1. Подготовка: менеджер → стейджинг ksud/bутстрапа ──
         apply(FlowEvent.Step(Phase.DEPLOY, 1, 3))
+        apply(FlowEvent.Progress(ctx.getString(R.string.log_manager_download, "ReSukiSU")))
         kotlinx.coroutines.delay(700)
+        apply(FlowEvent.Complete(true))
+        kotlinx.coroutines.delay(200)
         apply(FlowEvent.Log(ctx.getString(R.string.log_df_staged), LogLevel.OK))
 
         // ── 2. Запуск эксплойта: реальный лог натива ──
@@ -500,19 +504,20 @@ private fun runDemoDf(
         }
         kotlinx.coroutines.delay(400)
 
+        apply(FlowEvent.Log("dirtyfrag exit=0", LogLevel.OK))
+        kotlinx.coroutines.delay(200)
         apply(FlowEvent.Complete(true))
         kotlinx.coroutines.delay(300)
-        apply(FlowEvent.Log(ctx.getString(R.string.log_df_root_iface), LogLevel.OK))
         apply(FlowEvent.Log(ctx.getString(R.string.log_root_obtained, 38), LogLevel.OK))
+        apply(FlowEvent.Log(ctx.getString(R.string.log_df_root_iface), LogLevel.OK))
 
-        // ── 3. Менеджер KernelSU (выбранный) ──
+        // ── 3. finishRoot(dfMode): верификация, менеджер, зачистка ──
+        apply(FlowEvent.Log(ctx.getString(R.string.log_verify, "uid=0(root) gid=0(root) context=u:r:kernel:s0"), LogLevel.OK))
         apply(FlowEvent.Step(Phase.KSU, 3, 3))
-        apply(FlowEvent.Progress(ctx.getString(R.string.log_manager_download, "KernelSU")))
-        kotlinx.coroutines.delay(700)
-        apply(FlowEvent.Complete(true))
-        apply(FlowEvent.Progress(ctx.getString(R.string.log_ksu_load)))
+        apply(FlowEvent.Log(ctx.getString(R.string.log_manager_already, "ReSukiSU"), LogLevel.OK))
+        apply(FlowEvent.Progress(ctx.getString(R.string.log_ksu_verify)))
         kotlinx.coroutines.delay(600)
-        apply(FlowEvent.Complete(true, ctx.getString(R.string.log_ksu_active, "KernelSU")))
+        apply(FlowEvent.Complete(true, ctx.getString(R.string.log_ksu_active, "ReSukiSU")))
         apply(FlowEvent.Progress(ctx.getString(R.string.log_cleanup_start)))
         kotlinx.coroutines.delay(500)
         apply(FlowEvent.Complete(true, ctx.getString(R.string.log_cleanup_done)))

@@ -118,6 +118,17 @@ fun FlowScreen(
     /** Туман (размытие + непрозрачность) в потоке лога; просмотр лога — без него */
     fog: Boolean = true,
 ) {
+    // Шапка копируемого лога: базовая инфа об устройстве — как на главной
+    // (Модель / Ядро / Патч). На экране лога НЕ показывается — только в тексте
+    val copyHeader = with(state) {
+        val d = device
+        if (d == null) "" else {
+            val model = (catalogMarketName ?: d.marketName) + " (${catalogDeviceCode ?: d.model})"
+            "${stringResource(R.string.device_model)}: $model\n" +
+                "${stringResource(R.string.device_kernel)}: ${d.kernel}\n" +
+                "${stringResource(R.string.device_patch)}: ${d.securityPatch}"
+        }
+    }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -143,6 +154,10 @@ fun FlowScreen(
                                     else -> ""
                                 }
                                 val text = buildString {
+                                    if (copyHeader.isNotBlank()) {
+                                        append(copyHeader)
+                                        append("\n\n")
+                                    }
                                     append(state.log.joinToString("\n") { marker(it) + it.text })
                                     if (state.exploitLive.lines.isNotEmpty()) {
                                         append("\n\n=== exploit live log ===\n")
@@ -238,6 +253,10 @@ fun FlowScreen(
                             else -> ""
                         }
                         val text = buildString {
+                            if (copyHeader.isNotBlank()) {
+                                append(copyHeader)
+                                append("\n\n")
+                            }
                             append(state.log.joinToString("\n") { marker(it) + it.text })
                             if (state.exploitLive.lines.isNotEmpty()) {
                                 append("\n\n=== exploit live log ===\n")

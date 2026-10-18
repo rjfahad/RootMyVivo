@@ -78,9 +78,13 @@ class FlowUiReducer(private val ctx: Context) {
             stepIndex = event.index,
             stepTotal = event.total,
             downloadProgress = null, // новый шаг — прогресс загрузки сброшен
-            // Новая фаза: проценты как минимум на её базе (вперёд — да,
-            // назад — нет: повторные Step той же фазы не откатывают)
-            flowPercent = maxOf(s.flowPercent, phaseBase(event.phase)),
+            // Смена фазы: база новой фазы. Повторный Step ТОЙ ЖЕ фазы
+            // проценты не двигает — иначе DF прыгал назад (48% → 20%)
+            flowPercent = if (s.flowPhase != event.phase) {
+                maxOf(s.flowPercent, phaseBase(event.phase))
+            } else {
+                s.flowPercent
+            },
         )
 
         is FlowEvent.Log -> bump(
@@ -143,9 +147,14 @@ class FlowUiReducer(private val ctx: Context) {
             val frac = if (event.total > 0) event.read.toFloat() / event.total else null
             s.copy(
                 downloadProgress = frac,
-                // Скачивание двигает проценты внутри фазы (до базы следующей)
+                // Скачивание двигает проценты ТОЛЬКО внутри своей полосы
+                // [base(DOWNLOAD); cap(DOWNLOAD)] = [8;18]: без привязки к
+                // базе фаза DEPLOY (20) занижала прогресс скачивания
                 flowPercent = if (frac != null && s.flowPhase == Phase.DOWNLOAD) {
-                    maxOf(s.flowPercent, 10 + (frac * 20).toInt())
+                    val target = 10 + (frac * 8).toInt()
+                    val lo = phaseBase(Phase.DOWNLOAD)
+                    val hi = phaseCap(Phase.DOWNLOAD).coerceAtLeast(lo)
+                    target.coerceIn(lo, hi)
                 } else {
                     s.flowPercent
                 },

@@ -93,7 +93,7 @@
     <string name="flow_fail_stopped">Остановлено пользователем</string>
     <string name="flow_fail_ksu">KernelSU не активировался</string>
     <string name="flow_fail_other">Неизвестная ошибка</string>
-            <string name="log_df_root_iface">Root-интерфейс DirtyFrag загружен, ставлю менеджер KernelSU</string>
+            <string name="log_df_root_iface">Установка менеджера…</string>
     <string name="log_df_wait_manager">Ожидание подтверждения установки менеджера…</string>
         <string name="log_df_manager_manual">Менеджер не установлен — подтвердите диалог установки или поставьте вручную</string>
     <string name="log_df_manager_stage_fail">Менеджер не докачан — установка пройдёт через системный установщик</string>
@@ -112,6 +112,7 @@
     <string name="payload_short_searching">Поиск…</string>
 <string name="transport_via_adb">через ADB tcp</string>    <!-- Лог -->
     <string name="log_started">Запуск процесса получения root</string>
+    <string name="log_started_df">Запуск процесса получения root (метод DirtyFrag)</string>
     <string name="log_payload">Используется пейлоад: %1$s</string>
     <string name="log_download_start">Скачивание %1$s (%2$d КБ)…</string>
     <string name="log_download_ok">%1$s скачан</string>
@@ -122,7 +123,6 @@
     <string name="df_status_patched">Не применим: в этом ядре примитив пропатчен (исправление с мая 2026)</string>
     <string name="df_status_dead">Не применим: ядра 6.1.x мёртвы для DirtyFrag (mitigation в ядре)</string>
     <string name="df_status_nongki">Не применим: non-GKI ядро не поддерживается</string>
-    <string name="log_df_method">Метод DirtyFrag (универсальный, встроен в приложение)</string>
     <string name="log_df_staged">ksud и бутстрап подготовлены</string>
     <string name="log_df_dead_61">DirtyFrag недоступен: ядро 6.1.x — примитив мёртв (mitigation в ядре)</string>
     <string name="log_df_patched">DirtyFrag недоступен: в этом ядре примитив пропатчен (исправление с мая 2026)</string>

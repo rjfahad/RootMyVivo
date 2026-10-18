@@ -124,6 +124,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             flowResult = null,
             downloadProgress = null,
             softRebootPrompt = false,
+            // Новый запуск — проценты/фаза с нуля: иначе остаток прошлого
+            // раза давал стартовый прыжок (48% → 20)
+            flowPercent = 0,
+            flowPhase = null,
+            stepIndex = 0,
             // rootState не трогаем: без «проверки состояния» между кнопкой и экраном взлома
         )
         // Foreground-сервис: процесс рута продолжается и в фоне
