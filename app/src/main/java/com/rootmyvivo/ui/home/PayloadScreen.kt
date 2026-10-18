@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rootmyvivo.R
 import com.rootmyvivo.data.DeviceInfo
 import com.rootmyvivo.ui.common.SettingsGroup
@@ -321,7 +322,7 @@ private fun UserDeviceCard(state: UiState) {
             // Заголовок — имя девайса из каталога + код тела в скобках
             Text(
                 heroTitle,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 23.sp),
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 1,
