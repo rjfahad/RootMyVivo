@@ -449,12 +449,10 @@ private fun runDemoDf(
         // ═══ Точная последовательность успешного runDirtyFrag() + finishRoot(dfMode) ═══
         apply(FlowEvent.Log(ctx.getString(R.string.log_started_df)))
 
-        // ── 1. Подготовка: менеджер → стейджинг ksud/bутстрапа ──
+        // ── 1. Подготовка: менеджер уже установлен — без скачивания;
+        //        стейджинг ksud/bootstrap/df.conf, строго до эксплойта ──
         apply(FlowEvent.Step(Phase.DEPLOY, 1, 3))
-        apply(FlowEvent.Progress(ctx.getString(R.string.log_manager_download, "ReSukiSU")))
         kotlinx.coroutines.delay(700)
-        apply(FlowEvent.Complete(true))
-        kotlinx.coroutines.delay(200)
         apply(FlowEvent.Log(ctx.getString(R.string.log_df_staged), LogLevel.OK))
 
         // ── 2. Запуск эксплойта: реальный лог натива ──

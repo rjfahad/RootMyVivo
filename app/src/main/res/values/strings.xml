@@ -117,7 +117,7 @@
     <string name="log_download_start">Скачивание %1$s (%2$d КБ)…</string>
     <string name="log_download_ok">%1$s скачан</string>
     <string name="log_deploy_ok">Эксплойт развёрнут в /data/local/tmp/rmv</string>
-    <string name="log_exploit_start">Запуск эксплойта…</string>
+    <string name="log_exploit_start">Запуск эксплойта</string>
     <string name="log_root_already">Root уже активен</string>
         <string name="df_status_ok">Применим на этом ядре (экспериментально)</string>
     <string name="df_status_patched">Не применим: в этом ядре примитив пропатчен (исправление с мая 2026)</string>

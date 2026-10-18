@@ -75,10 +75,12 @@ class DirtyFragRunner(private val variant: KsuVariant) {
         val dp = dpDir(ctx)
         dp.mkdirs()
 
-        // APK менеджера, докачанный до запуска эксплойта. Фактический пакет
-        // читаем из архива: spoofed-сборка подписана под рандомным именем.
-        // Сайдкар manager.apk.variant не даёт переиспользовать APK другого
-        // варианта, оставшийся от прошлого выбора на главной
+        // APK менеджера, докачанный до запуска эксплойта (если вообще
+        // качался — при уже установленном менеджере скачивания нет).
+        // Фактический пакет читаем из архива: spoofed-сборка подписана под
+        // рандомным именем. Сайдкар manager.apk.variant не даёт
+        // переиспользовать APK другого варианта, оставшийся от прошлого
+        // выбора на главной
         val apk = File(dp, "manager.apk")
         val sidecar = File(dp, "manager.apk.variant")
         if (apk.exists() && (sidecar.exists() && sidecar.readText().trim() != variant.id)) {
@@ -92,7 +94,11 @@ class DirtyFragRunner(private val variant: KsuVariant) {
                 null
             }
         } else null
-        val pkg = actualPkg ?: variant.packageName
+        // Пакет прошлой установки ЭТОГО варианта — фактическое имя spoofed
+        // менеджера, уже стоящего в системе (записано KsuInstaller'ом)
+        val prefs = com.rootmyvivo.data.Prefs(ctx)
+        val savedPkg = if (prefs.managerVariant == variant.id) prefs.managerPackage else ""
+        val pkg = actualPkg ?: savedPkg.ifEmpty { variant.packageName }
         suManager = pkg
 
         // ksud приоритетом: 1) установленный пакет выбранного менеджера —
@@ -100,7 +106,7 @@ class DirtyFragRunner(private val variant: KsuVariant) {
         // в /data/app не извлекаются), 2) тот же распайп из стейдженного
         // manager.apk, 3) assets/ksud — фолбэк для пустой установки
         var ksudStaged = false
-        for (p in listOf(pkg, variant.packageName).distinct()) {
+        for (p in listOf(pkg, savedPkg, variant.packageName).filter { it.isNotEmpty() }.distinct()) {
             try {
                 val src = ctx.packageManager.getApplicationInfo(p, 0).sourceDir
                 if (src != null && stageKsudFromApk(File(src), File(dp, "ksud"))) {
@@ -160,12 +166,13 @@ class DirtyFragRunner(private val variant: KsuVariant) {
     }
 
     /**
-     * Полный запуск: SA (IpSecManager) → стейджинг → нативный бинарь.
+     * Полный запуск: SA (IpSecManager) → нативный бинарь. Стейджинг ВЫЗЫВАЮЩИЙ
+     * делает заранее ([stage]) — подготовка обязана быть завершена до запуска
+     * натива, здесь она не повторяется (иначе эксплойт стартует раньше, чем
+     * готовы ksud/df.conf, и вторым проходом тратятся секунды на перепись).
      * Возвращает код выхода. Кидает исключение при любой ошибке setup.
      */
     fun run(ctx: Context, onLine: (String) -> Unit): Int {
-        stage(ctx)
-
         val ipsec = ctx.getSystemService(Context.IPSEC_SERVICE) as? IpSecManager
             ?: throw IllegalStateException("IpSecManager unavailable (requires API 28+)")
 

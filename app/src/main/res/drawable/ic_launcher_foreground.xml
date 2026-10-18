@@ -18,8 +18,9 @@
         android:fillColor="@color/iconForeground"
         android:pathData="M40,50 L66,50 C68.5,50 70,51.5 70,54 L70,72 C70,74.5 68.5,76 66,76 L40,76 C37.5,76 36,74.5 36,72 L36,54 C36,51.5 37.5,50 40,50 Z" />
 
-    <!-- Молния -->
+    <!-- Молния цветом ФОНА — «вырез» в корпусе; путь верхний (рисуется
+         после корпуса, не под ним), чтобы читался везде, включая замок -->
     <path
-        android:fillColor="@color/iconAccent"
+        android:fillColor="@color/iconBackground"
         android:pathData="M53,57 L56,57 L54,61 L57,61 L50,68 L52,63 L49,63 Z" />
 </vector>

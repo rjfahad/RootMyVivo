@@ -104,7 +104,7 @@
     <string name="log_download_start">Downloading %1$s (%2$d KB)…</string>
     <string name="log_download_ok">%1$s downloaded</string>
     <string name="log_deploy_ok">Exploit deployed to /data/local/tmp/rmv</string>
-    <string name="log_exploit_start">Running exploit…</string>
+    <string name="log_exploit_start">Running exploit</string>
     <string name="log_root_already">Root is already active</string>
         <string name="df_status_ok">Applicable on this kernel (experimental)</string>
     <string name="df_status_patched">Not applicable: primitive is patched in this kernel (fix since May 2026)</string>

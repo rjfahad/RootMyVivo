@@ -363,6 +363,24 @@ class KsuInstaller(
             }
         }
 
+    /** Менеджер этого варианта уже стоит в системе? (канонический пакет
+     *  или фактический прошлой установки) — тогда и качать нечего. */
+    fun managerInstalled(variant: KsuVariant): Boolean {
+        val prefs = com.rootmyvivo.data.Prefs(ctx)
+        val pkgs = listOf(
+            variant.packageName,
+            if (prefs.managerVariant == variant.id) prefs.managerPackage else "",
+        ).filter { it.isNotEmpty() }.distinct()
+        for (p in pkgs) {
+            try {
+                ctx.packageManager.getPackageInfo(p, 0)
+                return true
+            } catch (_: Exception) {
+            }
+        }
+        return false
+    }
+
     suspend fun installManagerOnly(variant: KsuVariant): KsuResult =
         withContext(Dispatchers.IO) {
             val prefs = com.rootmyvivo.data.Prefs(ctx)
