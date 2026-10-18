@@ -101,15 +101,21 @@ class DirtyFragRunner(private val variant: KsuVariant) {
         val pkg = actualPkg ?: savedPkg.ifEmpty { variant.packageName }
         suManager = pkg
 
-        // ksud приоритетом: 1) установленный пакет выбранного менеджера —
-        // распаковка libksud.so из его base.apk (нативы лежат DEFLATE'ом,
-        // в /data/app не извлекаются), 2) тот же распайп из стейдженного
-        // manager.apk, 3) assets/ksud — фолбэк для пустой установки
+        // ksud приоритетом: 1) nativeLibraryDir установленного пакета —
+        // мгновенно, без распаковки (extractNativeLibs=true); 2) DEFLATE-распайп
+        // libksud.so из base.apk установленного пакета; 3) из стейдженного
+        // manager.apk; 4) assets/ksud — фолбэк для пустой установки
         var ksudStaged = false
         for (p in listOf(pkg, savedPkg, variant.packageName).filter { it.isNotEmpty() }.distinct()) {
             try {
-                val src = ctx.packageManager.getApplicationInfo(p, 0).sourceDir
-                if (src != null && stageKsudFromApk(File(src), File(dp, "ksud"))) {
+                val info = ctx.packageManager.getApplicationInfo(p, 0)
+                val lib = File(info.nativeLibraryDir, "libksud.so")
+                if (lib.isFile && lib.length() > 0) {
+                    stageBin(ctx, lib, "ksud")
+                    ksudStaged = true
+                    break
+                }
+                if (info.sourceDir != null && stageKsudFromApk(File(info.sourceDir), File(dp, "ksud"))) {
                     ksudStaged = true
                     break
                 }

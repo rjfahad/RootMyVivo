@@ -392,22 +392,26 @@ class KsuInstaller(
                 return c == 0 && out.contains("uid=0")
             }
 
-            // 0) Бутстрап (root-контекст) только что поставил persist-порт,
-            // вписал наш adb-ключ и рестартил adbd: ждём канал и включаем
-            // adb-транспорт — дальше вся установка идёт через ADB shell
-            // (allow-shell root), как в проверенном GL-флоу
-            val adbUp = com.rootmyvivo.shell.Transport.adbWaitAlive(ctx, timeoutMs = 30_000L)
-            if (adbUp) {
-                Log.i(TAG, "adb transport up after bootstrap persist")
-                prefs.firstRootDone = true
-            }
-
-            // 1) Менеджер уже стоит — установку пропускаем
+            // 1) Менеджер уже стоит — установку пропускаем. Проверка ДО
+            // ожидания adb-канала: когда ставить нечего, канал не нужен
+            // вовсе, а ждать его рестарта — десятки секунд в никуда
             var installed = false
             for (pkg in knownPkgs) {
                 if (isPackageInstalled(pkg)) {
                     installed = true
                     break
+                }
+            }
+            // 0) Бутстрап (root-контекст) только что поставил persist-порт,
+            // вписал наш adb-ключ и рестартил adbd: ждём канал и включаем
+            // adb-транспорт — дальше вся установка идёт через ADB shell
+            // (allow-shell root), как в проверенном GL-флоу. Ждём только
+            // если менеджер придётся ставить/докачивать
+            if (!installed) {
+                val adbUp = com.rootmyvivo.shell.Transport.adbWaitAlive(ctx, timeoutMs = 30_000L)
+                if (adbUp) {
+                    Log.i(TAG, "adb transport up after bootstrap persist")
+                    prefs.firstRootDone = true
                 }
             }
             if (installed) {
