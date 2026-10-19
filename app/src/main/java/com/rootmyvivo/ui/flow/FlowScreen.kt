@@ -649,6 +649,10 @@ private fun failureHint(f: FlowResult.Failure): String? = when (f.reason) {
     FlowEvent.Reason.DEPLOY -> stringResource(R.string.hint_deploy)
     FlowEvent.Reason.EXPLOIT -> stringResource(R.string.hint_exploit)
     FlowEvent.Reason.DF -> stringResource(R.string.hint_df)
+    // exit=2: триггер сработал, модуль загрузился, но init не завершился
+    FlowEvent.Reason.DF_INIT -> stringResource(R.string.hint_df_init)
+    // exit=3: патч файлов не прошёл — ядро не уязвимо/пропатчено
+    FlowEvent.Reason.DF_PATCHED -> stringResource(R.string.hint_df)
     FlowEvent.Reason.TIMEOUT -> stringResource(R.string.hint_timeout)
     FlowEvent.Reason.STOPPED -> null
     FlowEvent.Reason.KSU -> stringResource(R.string.hint_ksu)
@@ -664,6 +668,9 @@ private fun failureText(f: FlowResult.Failure): String = stringResource(
         FlowEvent.Reason.EXPLOIT -> R.string.flow_fail_exploit
     // DF: тот же заголовок, но без подсказки про «лотерею таймингов»
     FlowEvent.Reason.DF -> R.string.flow_fail_exploit
+    // Код выхода натива — заголовком карточки, описание в подсказке
+    FlowEvent.Reason.DF_INIT -> R.string.flow_fail_df_init
+    FlowEvent.Reason.DF_PATCHED -> R.string.flow_fail_df_patched
         FlowEvent.Reason.TIMEOUT -> R.string.flow_fail_timeout
         FlowEvent.Reason.STOPPED -> R.string.flow_fail_stopped
         FlowEvent.Reason.KSU -> R.string.flow_fail_ksu

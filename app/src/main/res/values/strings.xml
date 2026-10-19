@@ -89,6 +89,8 @@
     <string name="flow_fail_download">Ошибка скачивания файлов</string>
     <string name="flow_fail_deploy">Не удалось передать эксплойт на устройство</string>
     <string name="flow_fail_exploit">Эксплойт завершился без рута</string>
+    <string name="flow_fail_df_init">dirtyfrag exit=2</string>
+    <string name="flow_fail_df_patched">dirtyfrag exit=3</string>
     <string name="flow_fail_timeout">Таймаут ожидания root</string>
     <string name="flow_fail_stopped">Остановлено пользователем</string>
     <string name="flow_fail_ksu">KernelSU не активировался</string>
@@ -160,6 +162,7 @@
     <string name="hint_deploy">Попробуй ещё раз</string>
     <string name="hint_exploit">Это лотерея таймингов — перезагрузи телефон и попробуй снова</string>
     <string name="hint_df">Скорее всего ваше ядро не поддерживается</string>
+    <string name="hint_df_init">Триггер сработал и модуль загрузился, но бутстрап/ksud не завершились за 7 секунд — смотри живой лог и пробуй снова</string>
     <string name="hint_timeout">Перезагрузи телефон и попробуй ещё раз</string>
     <string name="hint_ksu">Перезагрузка userspace может активировать модуль</string>
     <!-- Предупреждение -->

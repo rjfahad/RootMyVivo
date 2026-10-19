@@ -575,10 +575,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var lastFlowEventAt = 0L
 
     private fun applyFlowEvent(event: FlowEvent) {
-        // Троттлинг — только для «текстовых» событий (Log/Progress/Complete);
-        // Step/Download/Success/Failure применяются мгновенно
+        // Троттлинг — для «текстовых» событий (Log/Progress/Complete) и
+        // Step: фаза в статус-карточке тоже рендерится, без троттлинга
+        // «Запуск эксплойта» выскакивал раньше предыдущих строк лога
         val textual = event is FlowEvent.Log || event is FlowEvent.Progress ||
-            event is FlowEvent.Complete
+            event is FlowEvent.Step || event is FlowEvent.Complete
         if (textual) {
             val now = System.currentTimeMillis()
             val wait = 100L - (now - lastFlowEventAt)

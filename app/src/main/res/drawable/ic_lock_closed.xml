@@ -15,13 +15,13 @@
         android:fillColor="#00000000"
         android:pathData="M28,23 L28,12 C28,7 24.5,4 20,4 C15.5,4 12,7 12,12 L12,23" />
 
-    <!-- Корпус -->
+    <!-- Корпус (скругления как в иконке приложения) -->
     <path
         android:fillColor="@color/iconForeground"
-        android:pathData="M8,23 L34,23 C36.5,23 38,24.5 38,27 L38,45 C38,47.5 36.5,49 34,49 L8,49 C5.5,49 4,47.5 4,45 L4,27 C4,24.5 5.5,23 8,23 Z" />
+        android:pathData="M8,23 L33.5,23 C36.5,23 38,24.5 38,27.5 L38,44.5 C38,47.5 36.5,49 33.5,49 L8,49 C5.5,49 4,47.5 4,44.5 L4,27.5 C4,24.5 5.5,23 8,23 Z" />
 
-    <!-- Молния -->
+    <!-- Молния цветом фона — «вырез», как на иконке -->
     <path
-        android:fillColor="@color/iconAccent"
+        android:fillColor="@color/iconBackground"
         android:pathData="M21,30 L24,30 L22,34 L25,34 L18,41 L20,36 L17,36 Z" />
 </vector>

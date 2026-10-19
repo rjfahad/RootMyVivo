@@ -76,6 +76,8 @@
     <string name="flow_fail_download">File download failed</string>
     <string name="flow_fail_deploy">Failed to transfer the exploit to the device</string>
     <string name="flow_fail_exploit">The exploit finished without root</string>
+    <string name="flow_fail_df_init">dirtyfrag exit=2</string>
+    <string name="flow_fail_df_patched">dirtyfrag exit=3</string>
     <string name="flow_fail_timeout">Timed out waiting for root</string>
     <string name="flow_fail_stopped">Stopped by user</string>
     <string name="flow_fail_ksu">KernelSU did not activate</string>
@@ -147,6 +149,7 @@
     <string name="hint_deploy">Try again</string>
     <string name="hint_exploit">It\'s a timing lottery — reboot the phone and try again</string>
     <string name="hint_df">Your kernel is most likely not supported</string>
+    <string name="hint_df_init">The trigger fired and the module loaded, but bootstrap/ksud did not finish within 7 seconds — check the live log and try again</string>
     <string name="hint_timeout">Reboot the phone and try again</string>
     <string name="hint_ksu">A userspace reboot may activate the module</string>
     <!-- Warning -->
