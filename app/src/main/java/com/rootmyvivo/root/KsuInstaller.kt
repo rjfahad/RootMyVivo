@@ -381,6 +381,62 @@ class KsuInstaller(
         return false
     }
 
+    /**
+     * DF: менеджера нет → скачать свежий релиз выбранного варианта и
+     * отправить на установку тем же механизмом, что обновление приложения
+     * (ACTION_VIEW поверх FileProvider — системный установщик с
+     * подтверждением, он работает), затем ждать факта установки. Без
+     * лишних логов: один шаг «Установка менеджера…» → «Менеджер установлен».
+     * true — менеджер стоит (был или стал).
+     */
+    suspend fun ensureManagerInstalledDf(variant: KsuVariant): Boolean =
+        withContext(Dispatchers.IO) {
+            if (managerInstalled(variant)) return@withContext true
+            val prefs = com.rootmyvivo.data.Prefs(ctx)
+            progress(R.string.log_manager_install)
+
+            // Свежий APK из релизов репозитория варианта
+            val apk = File(workDir, "manager.apk")
+            var actualPkg: String? = null
+            for ((_, url) in managerApkCandidates(variant)) {
+                apk.delete()
+                if (!download(url, apk.absolutePath)) continue
+                actualPkg = try {
+                    ctx.packageManager.getPackageArchiveInfo(apk.absolutePath, 0)?.packageName
+                } catch (_: Exception) {
+                    null
+                }
+                if (actualPkg != null && apk.length() > 1_000_000) break
+                actualPkg = null
+            }
+            if (actualPkg == null) {
+                onEvent(FlowEvent.Complete(false, ctx.getString(R.string.log_manager_download_fail)))
+                return@withContext false
+            }
+
+            // Установка — как у скачанного обновления приложения
+            val launched = com.rootmyvivo.data.AppUpdater.install(apk, ctx)
+            if (!launched) {
+                onEvent(FlowEvent.Complete(false, ctx.getString(R.string.log_manager_install_fail)))
+                return@withContext false
+            }
+            // Ждём подтверждения пользователя в системном установщике
+            val deadline = System.currentTimeMillis() + 300_000L
+            while (System.currentTimeMillis() < deadline && !isPackageInstalled(actualPkg)) {
+                kotlinx.coroutines.delay(2000L)
+            }
+            if (isPackageInstalled(actualPkg)) {
+                prefs.managerPackage = actualPkg
+                prefs.managerVariant = variant.id
+                onEvent(FlowEvent.Complete(true, ctx.getString(R.string.log_manager_install_ok)))
+                apk.delete()
+                true
+            } else {
+                onEvent(FlowEvent.Complete(false, ctx.getString(R.string.log_df_manager_manual)))
+                false
+            }
+        }
+
     suspend fun installManagerOnly(variant: KsuVariant): KsuResult =
         withContext(Dispatchers.IO) {
             val prefs = com.rootmyvivo.data.Prefs(ctx)

@@ -12,11 +12,15 @@
     <uses-permission android:name="android.permission.DUMP" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- DirtyFrag: определение установленного SU-менеджера для ksud late-load -->
+    <!-- DirtyFrag: определение установленного SU-менеджера для ksud late-load.
+         Все варианты с главного экрана — без них PackageManager скрывает
+         пакеты и проверка «менеджер уже установлен» всегда ложна -->
     <queries>
         <package android:name="me.weishu.kernelsu" />
         <package android:name="me.bmax.apatch" />
         <package android:name="com.rifsxd.ksunext" />
+        <package android:name="com.sukisu.ultra" />
+        <package android:name="com.resukisu.resukisu" />
     </queries>
 
     <application
