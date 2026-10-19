@@ -824,6 +824,33 @@ private fun LogLine(
         kotlinx.coroutines.delay(180)
         appeared = true
     }
+
+    Row(
+        modifier
+            .fillMaxWidth()
+            .then(appearModifier(appeared))
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StatusIcon(entry.status, color)
+        Spacer(Modifier.width(12.dp))
+        Text(
+            entry.text,
+            style = MaterialTheme.typography.bodyLarge,
+            color = color,
+            maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * Общая анимация появления строки лога: маленькая размытая строка вырастает
+ * и проясняется. Используется и обычными строками, и строкой шага эксплойта —
+ * иначе она «выпрыгивала» раньше соседних без анимации.
+ */
+@Composable
+private fun appearModifier(appeared: Boolean): Modifier {
     val scale by animateFloatAsState(
         targetValue = if (appeared) 1f else 0.45f,
         animationSpec = spring(
@@ -842,26 +869,7 @@ private fun LogLine(
         animationSpec = tween(450),
         label = "appearBlur",
     )
-
-    Row(
-        modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .alpha(appearAlpha)
-            .blur(appearBlur)
-            .padding(vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        StatusIcon(entry.status, color)
-        Spacer(Modifier.width(12.dp))
-        Text(
-            entry.text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = color,
-            maxLines = 2,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-        )
-    }
+    return Modifier.scale(scale).alpha(appearAlpha).blur(appearBlur)
 }
 
 /** Чистая зона снизу: примерно три строки лога, выше начинается туман. */
@@ -876,6 +884,7 @@ private fun ExploitLine(
     entry: LogEntry,
     expanded: Boolean,
     onToggle: () -> Unit,
+    animateIn: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val color by androidx.compose.animation.animateColorAsState(
@@ -888,10 +897,17 @@ private fun ExploitLine(
         animationSpec = tween(250),
         label = "chevron",
     )
+    // Та же анимация появления, что у обычных строк лога
+    var appeared by remember(entry.id) { mutableStateOf(!animateIn) }
+    LaunchedEffect(entry.id) {
+        kotlinx.coroutines.delay(180)
+        appeared = true
+    }
 
     Row(
         modifier
             .fillMaxWidth()
+            .then(appearModifier(appeared))
             // Без стандартной AOSP-ripple: при раскрытии композиция
             // перестраивается мгновенно и анимация отменяется, а при
             // сворачивании успевает проиграться — поведение разное. Без
@@ -1110,6 +1126,7 @@ private fun LogStream(
                         entry = exploitEntry,
                         expanded = true,
                         onToggle = { exploitExpanded = false },
+                        animateIn = exploitEntry.id in newIds,
                     )
                 }
                 item(key = "live_block") {
@@ -1153,6 +1170,7 @@ private fun LogStream(
                             entry = exploitEntry,
                             expanded = exploitExpanded,
                             onToggle = { exploitExpanded = !exploitExpanded },
+                            animateIn = exploitEntry.id in newIds,
                         )
                     }
                     item(key = "live_block_viewer") {
@@ -1176,6 +1194,7 @@ private fun LogStream(
                             entry = entry,
                             expanded = false,
                             onToggle = { exploitExpanded = true },
+                            animateIn = entry.id in newIds,
                             modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
                         )
                     } else {
